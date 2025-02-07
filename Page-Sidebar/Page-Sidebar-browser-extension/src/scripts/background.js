@@ -238,7 +238,7 @@ function onClickHandler(info, tab){
 }
 
 function readContent(url) {
-    text = `\nanalyze following content from ${url}, focus on the meaningful content:\n `;
+    text = `\nanalyze and summarise the following content from ${url}, focus on the meaningful content, ignore navigation info/ads/recommended info...:\n `;
     const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
