@@ -27,7 +27,7 @@
   "offline_enabled": true,
   "minimum_chrome_version": "114",
   "host_permissions": ["<all_urls>"],
-  "permissions": ["contextMenus", "storage", "sidePanel", "declarativeNetRequestWithHostAccess"],
+  "permissions": ["scripting", "contextMenus", "storage", "sidePanel", "declarativeNetRequestWithHostAccess", "clipboardWrite"],
   "optional_permissions": ["bookmarks"],
   "storage": {
     "managed_schema": "schema.json"

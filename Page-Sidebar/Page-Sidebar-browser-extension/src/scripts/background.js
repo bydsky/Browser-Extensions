@@ -31,6 +31,7 @@ To view a copy of this license, visit http://creativecommons.org/licenses/GPL/2.
 if(typeof importScripts !== "undefined"){
 	// eslint-disable-next-line no-undef
 	importScripts("constants.js");
+	importScripts("Readability.js");
 }
 
 // Function to check if the current browser is Firefox
@@ -97,7 +98,7 @@ chrome.runtime.onMessage.addListener(function request(request, sender, response)
 		});
 		break;
 		// --- End Firefox
-	}
+    }
 });
 
 chrome.commands.onCommand.addListener(function(command){
@@ -203,7 +204,44 @@ function onClickHandler(info, tab){
 				}, 500);
 			});
 		}
-	}
+    }else if(info.menuItemId == "sleditable"){
+        console.log("right click editable", info, tab)
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: readContent,
+            args: [tab.id > 0]
+        }, (results) => {
+        });
+    }
+}
+
+function readContent(isEditable) {
+    text = "\nanalyze the following content and summarize the content:\n " + function () {
+        try {
+            // Initialize Readability with the document and get the article
+            const article = new Readability(document.cloneNode(true), {debug: false, charThreshold: 100000, nbTopCandidates: 5}).parse();
+
+            if (article) {
+                return article.textContent; // Return the readable text content
+            } else {
+                return "Readability failed to parse content."; // Indicate parsing failure
+            }
+        } catch (error) {
+            console.error("Readability error:", error);
+            return "Error extracting readable content."; // Handle errors gracefully
+        }
+    }();
+
+    navigator.clipboard.writeText(text)
+        .then(() => {
+            // Optionally, provide user feedback here (e.g., a message in the sidebar)
+        })
+        .catch((err) => {
+            alert('Failed to copy text: ' + err);
+            // Handle error scenarios, inform user if copy failed
+        });
+
+    return text;
 }
 
 // check to remove all contextmenus
@@ -300,6 +338,7 @@ var contextmenuadded = false;
 var contextarraypage = [];
 var contextarraylink = [];
 var contextarrayselection = [];
+var contextarrayeditable = [];
 
 function addwebpagecontext(a, b, c, d){
 	var k;
@@ -318,7 +357,7 @@ function checkcontextmenus(){
 			// page
 			var pagetitle = chrome.i18n.getMessage("pagetitle");
 			var contextspage = ["page"];
-			addwebpagecontext(pagetitle, contextspage, contextarraypage, "sppage");
+			addwebpagecontext("Copy Content", contextspage, contextarraypage, "sleditable");
 			// link
 			var linktitle = chrome.i18n.getMessage("linktitle");
 			var contextslink = ["link"];
@@ -345,6 +384,7 @@ function removecontexmenus(){
 		cleanrightclickmenu(contextarraypage);
 		cleanrightclickmenu(contextarraylink);
 		cleanrightclickmenu(contextarrayselection);
+		cleanrightclickmenu(contextarrayeditable);
 		contextmenuadded = false;
 	}
 }
