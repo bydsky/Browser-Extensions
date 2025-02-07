@@ -256,7 +256,9 @@ function readContent(url) {
 
     let node;
     while (node = walker.nextNode()) {
-        text += node.textContent.trim() + '\n';
+        if(text.length < 70000) {
+            text += node.textContent.trim() + '\n';
+        }
     }
     return text.trim();
 }
