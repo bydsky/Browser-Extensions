@@ -1183,7 +1183,7 @@ Readability.prototype = {
       if (isPaging)
         articleContent.id = "readability-content";
 
-      var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
+      var siblingScoreThreshold = Math.max(5, topCandidate.readability.contentScore * 0.2);
       // Keep potential top candidate's parent node to try to get text direction of it later.
       parentOfTopCandidate = topCandidate.parentNode;
       var siblings = parentOfTopCandidate.children;
@@ -2308,3 +2308,7 @@ Readability.prototype = {
   }
 };
 
+if (typeof module === "object") {
+  /* global module */
+  module.exports = Readability;
+}

@@ -26,6 +26,8 @@ To view a copy of this license, visit http://creativecommons.org/licenses/GPL/2.
 */
 //================================================
 
+import './Readability.js'
+
 var selectedsearch, searchgoogle, searchbing, searchduckduckgo, searchbaidu, searchyandex, typepanelzone, typepanelcustom, typepanellasttime, websitestartname, websitelasttime, navtop, navbottom, navhidden, opentab, opencopy, opennonebookmarks, openbrowserbookmarks, openquickbookmarks, googlesidepanel, zoom, defaultzoom, step, multipletabs, multivalues, navbuttons, gobutton, typehomezone, typehomecustom, websitehomepagename, preventclose, dragnewtab, mutetab, searchyahoo, search360, searchsogou, searchchatgpt, searchgemini, searchwikipedia;
 
 var faviconserver = "https://s2.googleusercontent.com/s2/favicons?domain=";
@@ -1715,5 +1717,14 @@ chrome.runtime.onMessage.addListener(function(request){
 		}else{
 			mutetab = false;
 		}
-	}
+    }else if(request.msg == "copyContent"){
+        navigator.clipboard.writeText(request.content)
+            .then(() => {
+                // Optionally, provide user feedback here (e.g., a message in the sidebar)
+            })
+            .catch((err) => {
+                alert('Failed to copy text: ' + err);
+                // Handle error scenarios, inform user if copy failed
+            });
+    }
 });

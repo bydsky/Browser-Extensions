@@ -28,10 +28,12 @@ To view a copy of this license, visit http://creativecommons.org/licenses/GPL/2.
 
 // Importing the constants
 // Execute if importScripts is support such as Google Chrome and not Firefox
-if(typeof importScripts !== "undefined"){
+var isImported = false;
+if(typeof importScripts !== "undefined" && isImported == false){
 	// eslint-disable-next-line no-undef
 	importScripts("constants.js");
 	importScripts("Readability.js");
+    isImported = true;
 }
 
 // Function to check if the current browser is Firefox
@@ -206,42 +208,57 @@ function onClickHandler(info, tab){
 		}
     }else if(info.menuItemId == "sleditable"){
         console.log("right click editable", info, tab)
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: readContent,
-            args: [tab.id > 0]
-        }, (results) => {
-        });
+
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs && tabs.length > 0) {
+                const activeTab = tabs[0]; // Get the first active tab in the current window
+
+                chrome.scripting.executeScript({
+                    target: {tabId: activeTab.id}, // Use the ID of the active tab we just queried
+                    function: readContent,
+                    args: [activeTab.url]
+                }, function(injectionResults) {
+                    if (chrome.runtime.lastError) {
+                        console.error("Script injection failed: " + chrome.runtime.lastError.message);
+                        return;
+                    }
+                    if (injectionResults && injectionResults[0] && injectionResults[0].result) {
+                        const pageContent = injectionResults[0].result;
+
+                        chrome.runtime.sendMessage({ msg: "copyContent", content: pageContent });
+                    } else {
+                        console.log("Could not retrieve content from the main page.");
+                    }
+                });
+            } else {
+                console.log("No active tab found.");
+            }
+        })
     }
 }
 
-function readContent(isEditable) {
-    text = "\nanalyze the following content and summarize the content:\n " + function () {
-        try {
-            // Initialize Readability with the document and get the article
-            const article = new Readability(document.cloneNode(true), {debug: false, charThreshold: 100000, nbTopCandidates: 5}).parse();
-
-            if (article) {
-                return article.textContent; // Return the readable text content
-            } else {
-                return "Readability failed to parse content."; // Indicate parsing failure
+function readContent(url) {
+    text = `\nanalyze following content from ${url}, focus on the meaningful content:\n `;
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: function(node) {
+                const nodeName = node.nodeName.toLowerCase();
+                if (nodeName === 'script' || nodeName === 'noscript') {
+                    return NodeFilter.FILTER_REJECT; // Skip <script> elements
+                }
+                return NodeFilter.FILTER_ACCEPT; // Accept other elements
             }
-        } catch (error) {
-            console.error("Readability error:", error);
-            return "Error extracting readable content."; // Handle errors gracefully
-        }
-    }();
+        },
+        false
+    );
 
-    navigator.clipboard.writeText(text)
-        .then(() => {
-            // Optionally, provide user feedback here (e.g., a message in the sidebar)
-        })
-        .catch((err) => {
-            alert('Failed to copy text: ' + err);
-            // Handle error scenarios, inform user if copy failed
-        });
-
-    return text;
+    let node;
+    while (node = walker.nextNode()) {
+        text += node.textContent.trim() + '\n';
+    }
+    return text.trim();
 }
 
 // check to remove all contextmenus
@@ -343,11 +360,8 @@ var contextarrayeditable = [];
 function addwebpagecontext(a, b, c, d){
 	var k;
 	var addvideolength = b.length;
-	for(k = 0; k < addvideolength; k++){
-		var contextvideo = b[k];
-		menuitems = chrome.contextMenus.create({"title": a, "type":"normal", "id": d, "contexts":[contextvideo]});
-		c.push(menuitems);
-	}
+	menuitems = chrome.contextMenus.create({"title": a, "type":"normal", "id": d, "contexts":b});
+	c.push(menuitems);
 }
 
 function checkcontextmenus(){
@@ -356,7 +370,7 @@ function checkcontextmenus(){
 			contextmenuadded = true;
 			// page
 			var pagetitle = chrome.i18n.getMessage("pagetitle");
-			var contextspage = ["page"];
+			var contextspage = ["page", "editable"];
 			addwebpagecontext("Copy Content", contextspage, contextarraypage, "sleditable");
 			// link
 			var linktitle = chrome.i18n.getMessage("linktitle");
