@@ -238,14 +238,15 @@ function onClickHandler(info, tab){
 }
 
 function readContent(url) {
-    text = `\nanalyze and summarise the following content from ${url}, focus on the meaningful content, ignore navigation info/ads/recommended info...:\n `;
+    text = `\nanalyze and summarise the following content (focus on the meaningful content, ignore navigation info/ads/recommended info):\n `;
     const walker = document.createTreeWalker(
         document.body,
-        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        NodeFilter.SHOW_TEXT,
         {
             acceptNode: function(node) {
-                const nodeName = node.nodeName.toLowerCase();
-                if (nodeName === 'script' || nodeName === 'noscript') {
+				console.log(node);
+                const nodeName = node.parentNode.nodeName.toLowerCase();
+                if (nodeName === 'script' || nodeName === 'noscript' || nodeName === 'svg' || nodeName === 'defs' || nodeName === 'style') {
                     return NodeFilter.FILTER_REJECT; // Skip <script> elements
                 }
                 return NodeFilter.FILTER_ACCEPT; // Accept other elements
@@ -256,7 +257,7 @@ function readContent(url) {
 
     let node;
     while (node = walker.nextNode()) {
-        if(text.length < 70000) {
+        if(text.length < 70000 && node.textContent.trim().length > 0) {
             text += node.textContent.trim() + '\n';
         }
     }
