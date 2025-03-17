@@ -25,7 +25,7 @@ filter='
 if [ "$2" == "raw" ]; then
     echo $output
 else
-    echo $output | jq -r "$filter" 2>&1 | \
+    echo $output | sed -E 's/Trump|President//g' | jq -r "$filter" 2>&1 | \
         {
             echo "analyze and summarise the following content (focus on the meaningful content, ignore navigation info/ads/recommended info):"
             cat  # Append the jq output to the analysis prompt
