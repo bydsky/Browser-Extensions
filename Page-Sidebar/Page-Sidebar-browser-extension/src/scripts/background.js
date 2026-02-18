@@ -211,10 +211,10 @@ function onClickHandler(info, tab){
 
         chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
             if (tabs && tabs.length > 0) {
-                const activeTab = tabs[0]; // Get the first active tab in the current window
+                const activeTab = tabs[0];
 
                 chrome.scripting.executeScript({
-                    target: {tabId: activeTab.id}, // Use the ID of the active tab we just queried
+                    target: {tabId: activeTab.id},
                     function: readContent,
                     args: [activeTab.url]
                 }, function(injectionResults) {
@@ -225,8 +225,8 @@ function onClickHandler(info, tab){
                     if (injectionResults && injectionResults[0] && injectionResults[0].result) {
                         const pageContent = injectionResults[0].result;
 
-                        chrome.runtime.sendMessage({ msg: "copyContent", content: pageContent });
-                    } else {
+						chrome.runtime.sendMessage({ msg: "copyContent", content: pageContent });
+					} else {
                         console.log("Could not retrieve content from the main page.");
                     }
                 });
@@ -238,13 +238,12 @@ function onClickHandler(info, tab){
 }
 
 function readContent(url) {
-    text = `\nanalyze and summarise the following content (focus on the meaningful content, ignore navigation info/ads/recommended info):\n `;
+    text = `\nanalyze and summarise the following content (focus on the meaningful content, ignore navigation info,ads, etc):\n `;
     const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT,
         {
             acceptNode: function(node) {
-				console.log(node);
                 const nodeName = node.parentNode.nodeName.toLowerCase();
                 if (nodeName === 'script' || nodeName === 'noscript' || nodeName === 'svg' || nodeName === 'defs' || nodeName === 'style') {
                     return NodeFilter.FILTER_REJECT; // Skip <script> elements
@@ -257,11 +256,54 @@ function readContent(url) {
 
     let node;
     while (node = walker.nextNode()) {
-        if(text.length < 70000 && node.textContent.trim().length > 0) {
+        if(node.textContent.trim().length > 0) {
             text += node.textContent.trim() + '\n';
         }
     }
     return text.trim();
+}
+
+function insertContentToActiveElement(content) {
+    const activeElement = document.activeElement;
+    if (!activeElement) {
+        return { inserted: false };
+    }
+
+    const tagName = activeElement.tagName ? activeElement.tagName.toLowerCase() : "";
+    const isTextArea = tagName === "textarea";
+    const isTextInput = tagName === "input" && (!activeElement.type || ["text", "search", "url", "email", "tel", "password"].includes(activeElement.type));
+
+    if (isTextArea || isTextInput) {
+        const value = activeElement.value || "";
+        const start = typeof activeElement.selectionStart === "number" ? activeElement.selectionStart : value.length;
+        const end = typeof activeElement.selectionEnd === "number" ? activeElement.selectionEnd : value.length;
+        activeElement.value = value.slice(0, start) + content + value.slice(end);
+        const newPos = start + content.length;
+        if (typeof activeElement.selectionStart === "number") {
+            activeElement.selectionStart = newPos;
+            activeElement.selectionEnd = newPos;
+        }
+        activeElement.dispatchEvent(new Event("input", { bubbles: true }));
+        return { inserted: true };
+    }
+
+    if (activeElement.isContentEditable) {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(content));
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            activeElement.textContent += content;
+        }
+        activeElement.dispatchEvent(new Event("input", { bubbles: true }));
+        return { inserted: true };
+    }
+
+    return { inserted: false };
 }
 
 // check to remove all contextmenus

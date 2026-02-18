@@ -408,7 +408,7 @@ function init(){
 			document.getElementById("stefanvdpromo").className = "hidden";
 		}else{
 			if(items["optionskipremember"] != true){
-				document.getElementById("stefanvdpromo").className = ""; // show now always the banner
+				document.getElementById("stefanvdpromo").className = "hidden"; // show now always the banner
 			}else{
 				document.getElementById("stefanvdpromo").className = "hidden";
 			}
@@ -1718,13 +1718,34 @@ chrome.runtime.onMessage.addListener(function(request){
 			mutetab = false;
 		}
     }else if(request.msg == "copyContent"){
-        navigator.clipboard.writeText(request.content)
+		navigator.clipboard.writeText(request.content)
             .then(() => {
-                // Optionally, provide user feedback here (e.g., a message in the sidebar)
             })
             .catch((err) => {
                 alert('Failed to copy text: ' + err);
-                // Handle error scenarios, inform user if copy failed
             });
-    }
+
+		try {
+			const activeElement = document.activeElement;
+			console.log(activeElement);
+			if (activeElement) {
+				const tagName = activeElement.tagName ? activeElement.tagName.toLowerCase() : "";
+				const isTextArea = tagName === "textarea";
+				const isTextInput = tagName === "input" && (!activeElement.type || ["text", "search", "url", "email", "tel", "password"].includes(activeElement.type));
+				const isIframe = tagName === "iframe";
+				if (isTextArea || isTextInput) {
+					activeElement.value = request.content;
+					activeElement.dispatchEvent(new Event("input", { bubbles: true }));
+				} else if (isIframe) {
+					// Try to paste inside the iframe's active element
+					activeElement.contentWindow.postMessage({method: "updateEditable", content: request.content}, "*");
+				} else if (activeElement.isContentEditable) {
+					activeElement.textContent = request.content;
+					activeElement.dispatchEvent(new Event("input", { bubbles: true }));
+				}
+			}
+		} catch (e) {
+			console.log(e)
+		}
+	}
 });

@@ -74,6 +74,11 @@ if(window.top !== window && window.parent === window.top){
 					toggleMuteOn();
 				}else if(e.data?.method == "goMuteOffWebpage"){
 					toggleMuteOff();
+				}else if(e.data?.method === "updateEditable"){
+					const activeElement = document.activeElement;
+					if(activeElement.isContentEditable){
+						activeElement.textContent = e.data.content;
+					}
 				}
 			});
 
