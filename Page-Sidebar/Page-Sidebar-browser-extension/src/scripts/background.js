@@ -263,49 +263,6 @@ function readContent(url) {
     return text.trim();
 }
 
-function insertContentToActiveElement(content) {
-    const activeElement = document.activeElement;
-    if (!activeElement) {
-        return { inserted: false };
-    }
-
-    const tagName = activeElement.tagName ? activeElement.tagName.toLowerCase() : "";
-    const isTextArea = tagName === "textarea";
-    const isTextInput = tagName === "input" && (!activeElement.type || ["text", "search", "url", "email", "tel", "password"].includes(activeElement.type));
-
-    if (isTextArea || isTextInput) {
-        const value = activeElement.value || "";
-        const start = typeof activeElement.selectionStart === "number" ? activeElement.selectionStart : value.length;
-        const end = typeof activeElement.selectionEnd === "number" ? activeElement.selectionEnd : value.length;
-        activeElement.value = value.slice(0, start) + content + value.slice(end);
-        const newPos = start + content.length;
-        if (typeof activeElement.selectionStart === "number") {
-            activeElement.selectionStart = newPos;
-            activeElement.selectionEnd = newPos;
-        }
-        activeElement.dispatchEvent(new Event("input", { bubbles: true }));
-        return { inserted: true };
-    }
-
-    if (activeElement.isContentEditable) {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(document.createTextNode(content));
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        } else {
-            activeElement.textContent += content;
-        }
-        activeElement.dispatchEvent(new Event("input", { bubbles: true }));
-        return { inserted: true };
-    }
-
-    return { inserted: false };
-}
-
 // check to remove all contextmenus
 if(chrome.contextMenus){
 	chrome.contextMenus.removeAll(function(){
