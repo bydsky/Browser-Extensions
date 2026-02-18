@@ -88,6 +88,36 @@ if(window.top !== window && window.parent === window.top){
 	});
 }
 
+
+function updateGeminiModel() {
+	console.log("updateGeminiModel");
+	const nodes = document.querySelectorAll('button[data-test-id="bard-mode-menu-button"][aria-label="Open mode picker"]');
+	console.log(nodes);
+	nodes.forEach((node) => {
+		node.click();
+	});
+
+	const thinkingNodes = document.querySelectorAll('button[data-test-id="bard-mode-option-thinking"]');
+	console.log(thinkingNodes);
+	thinkingNodes.forEach((node) => {
+		node.click();
+	});
+}
+
+if (location.href.includes("gemini.google.com")) {
+	setTimeout(function() { 
+		updateGeminiModel();
+		const chat = document.querySelectorAll('a[data-test-id="expanded-button"][aria-label="New chat"]');
+		console.log("chat", chat);
+		chat.forEach((node) => {
+			node.addEventListener('click', (e) => {
+				setTimeout(updateGeminiModel, 1000);
+			});
+		});
+	}, 5000);
+
+}
+
 function toggleMuteOn(){
 	// Find all video elements on the page and mute them
 	const videos = document.querySelectorAll("video");
